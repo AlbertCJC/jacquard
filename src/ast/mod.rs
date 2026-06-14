@@ -13,3 +13,9 @@
 //! ## Lowering pass
 //! Transforms the Concrete Syntax Tree (from the parser) into this AST,
 //! resolving desugared constructs and validating structural constraints.
+
+pub mod nodes;
+pub mod visit;
+
+pub use nodes::*;
+pub use visit::Visitor;
