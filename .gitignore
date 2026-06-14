@@ -1,0 +1,13 @@
+# Superpowers brainstorming files
+.superpowers/
+
+# Rust build artifacts
+target/
+
+# IDE
+.vscode/
+.idea/
+
+# Added by cargo
+
+/target

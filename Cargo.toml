@@ -1,0 +1,7 @@
+[package]
+name = "jacquard"
+version = "0.1.0"
+edition = "2021"
+
+[dev-dependencies]
+insta = { version = "1", features = ["yaml"] }
