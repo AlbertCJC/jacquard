@@ -13,3 +13,9 @@
 //!
 //! ## Target
 //! C++17 or later, with no platform-specific assumptions beyond the runtime.
+
+pub mod mangling;
+mod cpp;
+
+pub use cpp::generate;
+pub use mangling::mangle_fn;
