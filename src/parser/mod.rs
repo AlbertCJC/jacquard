@@ -1,12 +1,29 @@
 //! Parser for Jacquard source code.
 //!
-//! Consumes tokens from the lexer and produces a Concrete Syntax Tree (CST).
-//! Built with the [chumsky](https://crates.io/crates/chumsky) parser combinator library.
+//! Consumes tokens from the lexer and produces an AST directly (no separate CST
+//! layer).  The parser uses operator-precedence (Pratt) parsing for expressions
+//! and recursive-descent for declarations and statements.
 //!
-//! ## Strategy
-//! - Declarations and statements: chumsky combinators with error recovery
-//! - Expressions: Pratt parsing (single function + operator precedence table)
+//! ## Architecture
+//! - `error` — `ParseError` type (message + span + expected/found token info).
+//! - `expressions` — `ParserState` token cursor, Pratt expression parser, and
+//!   all declaration/statement/type parsing.
 //!
-//! The parser operates in two layers:
-//! 1. CST construction (this module)
-//! 2. CST-to-AST lowering (handled by the `ast` module)
+//! The public entry point is [`parse`], which takes a token slice and returns a
+//! [`Program`](crate::ast::Program) AST.
+
+pub mod error;
+pub mod expressions;
+
+pub use error::ParseError;
+
+use crate::ast::Program;
+use crate::lexer::Token;
+use expressions::ParserState;
+
+/// Parse a token stream into a `Program` AST.
+///
+/// This is the main entry point for the parser phase of the compiler pipeline.
+pub fn parse(tokens: &[Token]) -> Result<Program, ParseError> {
+    ParserState::new(tokens).parse_program()
+}

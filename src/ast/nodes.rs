@@ -171,6 +171,8 @@ pub enum Statement {
     While(WhileStmt),
     For(ForStmt),
     ExprStmt(Expr),
+    /// A bare block `{ ... }` — used for `else { ... }` branches.
+    Block(Block),
 }
 
 #[derive(Debug, Clone)]

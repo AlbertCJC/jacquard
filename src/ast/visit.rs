@@ -100,6 +100,7 @@ pub trait Visitor {
                 self.visit_block(&s.body);
             }
             Statement::ExprStmt(e) => self.visit_expr(e),
+            Statement::Block(b) => self.visit_block(b),
         }
     }
 
