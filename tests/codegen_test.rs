@@ -134,3 +134,117 @@ mod codegen_tests {
             "empty program should still produce preamble");
     }
 }
+
+// ---------------------------------------------------------------------------
+// Full pipeline integration tests (lex → parse → type-check → codegen)
+// ---------------------------------------------------------------------------
+
+mod integration_tests {
+
+    #[test]
+    fn test_full_pipeline_simple_fn() {
+        let source = "fn add(x: i32, y: i32) -> i32 { return x + y; }";
+        let result = jacquard::compile(source, "test");
+        assert!(result.is_ok(), "pipeline should succeed, got: {:?}", result.err());
+        let output = result.unwrap();
+        assert!(!output.source.is_empty(), "source should not be empty");
+        assert!(output.source.contains("add"), "source should contain function name");
+    }
+
+    #[test]
+    fn test_full_pipeline_struct_and_fn() {
+        let source = r#"
+            pub struct Point { x: f32, y: f32 }
+            pub fn distance(a: Point, b: Point) -> f64 { return 0.0; }
+        "#;
+        let result = jacquard::compile(source, "geometry");
+        assert!(result.is_ok(), "pipeline should succeed, got: {:?}", result.err());
+        let output = result.unwrap();
+        assert!(output.header.contains("Point"), "header should contain struct");
+        assert!(!output.header.is_empty(), "header should not be empty");
+    }
+
+    #[test]
+    fn test_full_pipeline_task() {
+        let source = r#"
+            task countdown(n: i32) -> void {
+                let i = n;
+                return;
+            }
+        "#;
+        let result = jacquard::compile(source, "tasks");
+        assert!(result.is_ok(), "task pipeline should succeed, got: {:?}", result.err());
+        let output = result.unwrap();
+        assert!(output.source.contains("_state"), "task should have state counter");
+        assert!(output.source.contains("tick"), "task should have tick() method");
+    }
+
+    #[test]
+    fn test_full_pipeline_workflow() {
+        let source = r#"
+            workflow main {
+                return;
+            }
+        "#;
+        let result = jacquard::compile(source, "app");
+        assert!(result.is_ok(), "workflow pipeline should succeed, got: {:?}", result.err());
+        let output = result.unwrap();
+        assert!(output.source.contains("Workflow_main"), "should contain workflow struct");
+    }
+
+    #[test]
+    fn test_full_pipeline_generic_struct() {
+        let source = r#"
+            pub struct Pair<A, B> { first: A, second: B }
+        "#;
+        let result = jacquard::compile(source, "generic");
+        assert!(result.is_ok(), "pipeline should succeed, got: {:?}", result.err());
+        let output = result.unwrap();
+        assert!(output.header.contains("Pair"), "header should contain Pair");
+        assert!(output.header.contains("template"), "header should have template");
+    }
+
+    #[test]
+    fn test_full_pipeline_tagged_union_enum() {
+        let source = r#"
+            pub enum Option<T> { Some(T), None }
+        "#;
+        let result = jacquard::compile(source, "adt");
+        assert!(result.is_ok(), "pipeline should succeed, got: {:?}", result.err());
+        let output = result.unwrap();
+        assert!(output.header.contains("Option"), "header should contain Option");
+        assert!(output.header.contains("Tag"), "enum should have Tag enum class");
+    }
+
+    #[test]
+    fn test_full_pipeline_type_error_is_caught() {
+        let source = r#"
+            fn bad(x: i32) -> string { return x; }
+        "#;
+        let result = jacquard::compile(source, "err_test");
+        assert!(result.is_err(), "should fail type checking");
+        let err = result.unwrap_err();
+        let err_msg = err.to_string();
+        assert!(err_msg.contains("type error") || err_msg.contains("mismatch")
+            || err_msg.contains("Type"),
+            "error should mention type, got: {}", err_msg);
+    }
+
+    #[test]
+    fn test_full_pipeline_if_condition_type_error() {
+        let source = r#"
+            fn test() -> void { if 42 { return; } return; }
+        "#;
+        let result = jacquard::compile(source, "err_test");
+        assert!(result.is_err(), "should fail: if condition must be bool");
+    }
+
+    #[test]
+    fn test_full_pipeline_undeclared_variable_error() {
+        let source = r#"
+            fn test() -> void { let x = y; return; }
+        "#;
+        let result = jacquard::compile(source, "err_test");
+        assert!(result.is_err(), "should fail: y is undeclared");
+    }
+}
